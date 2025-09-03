@@ -1,0 +1,47 @@
+name: Build UEFI for xiaomi-andromeda
+
+on:
+  workflow_dispatch:  # 仅允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Run build setup script
+      run: |
+        chmod +x build_setup.sh
+        ./build_setup.sh
+
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade -r pip-requirements.txt
+
+    - name: Initialize UEFI build
+      run: |
+        python build_uefi.py --init
+
+    - name: Install LLVM-20
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 20
+        echo "/usr/lib/llvm-20/bin" >> $GITHUB_PATH
+
+    - name: Build UEFI for xiaomi-andromeda
+      run: |
+        python build_uefi.py -d xiaomi-andromeda
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: uefi-images
+        path: Build/SurfaceDuo1Pkg/*.img
